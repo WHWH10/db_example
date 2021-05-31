@@ -1,6 +1,7 @@
 var express = require('express');
 var dotenv = require('dotenv')
 var path = require('path');
+var mime = require('mime');
 
 var multer = require('multer')
     //var upload = multer({ dest: './uploads' })
@@ -65,20 +66,31 @@ router.post('/', upload, (req, res) => {
         Body: req.file.buffer,
     }
 
-    console.log(process.env.NAVER_CLOUD_BUCKET_NAME)
-    console.log(createBucket.s3)
+    // console.log('fileType:: ' + req.file.mimetype)
+    // console.log(process.env.NAVER_CLOUD_BUCKET_NAME)
+
+    if (req.file.mimetype.startsWith('image')) {
+        uploadImageFile(params, req.file, res)
+        console.log(req.file.mimetype)
+    } else {
+        console.log('not image : ' + req.file.mimetype)
+    }
+})
+
+function uploadImageFile(params, res) {
     s3.upload(params, (err, data) => {
         if (err) {
             res.status(500).json({
                 errorCode: 500,
                 errorMessage: err
             })
+        } else {
+            res.json({
+                resultCode: 200,
+                resultMessage: data
+            })
         }
-        res.json({
-            resultCode: 200,
-            resultMessage: data
-        })
     })
-})
+}
 
 module.exports = router;
