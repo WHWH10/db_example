@@ -1,7 +1,6 @@
 var express = require('express');
 var dotenv = require('dotenv')
 var path = require('path');
-var mime = require('mime');
 
 var multer = require('multer')
     //var upload = multer({ dest: './uploads' })
