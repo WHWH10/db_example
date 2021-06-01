@@ -1,9 +1,12 @@
-// const { reject } = require("lodash");
 var _ = require("lodash");
 
 var commonController = require("../common/commonController");
 
 // 이미지 파일 업로드 했을 경우
+function uploadFile(params) {
+    console.log(params.params)
+}
+
 function uploadImageFile(params) {
     return new Promise((resolve, reject) => {
         commonController.s3.upload(params, (err, data) => {
@@ -14,19 +17,6 @@ function uploadImageFile(params) {
             }
         })
     })
-}
-
-function uploadImageFilePromise(params) {
-  commonController.s3
-    .upload(params)
-    .promise()
-    .then((result) => {
-        console.log('result:: ' + result)
-      return result;
-    })
-    .catch((err) => {
-      return err;
-    });
 }
 
 // 이미지 파일 외 등록했을 경우
@@ -74,8 +64,8 @@ function uploadConvertJson(body) {
 }
 
 module.exports = {
+    uploadFile,
   uploadImageFile: uploadImageFile,
   uploadOtherFile: uploadOtherFile,
-  uploadImageFilePromise: uploadImageFilePromise,
   uploadConvertJson: uploadConvertJson,
 };

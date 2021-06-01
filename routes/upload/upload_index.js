@@ -24,6 +24,10 @@ router.get("/", (req, res) => {
 
 // 파일 업로드
 //https://stackoverflow.com/questions/34512559/how-should-i-batch-upload-to-s3-and-insert-to-mongodb-from-nodejs-webserver-with/34513997
+// router.post("/", (req, res) => {
+//     uploadController.uploadFile(req, res)
+// })
+
 router.post("/", commonController.upload, (req, res) => {
   let myFileName = req.file.originalname.split(".");
   const fileType = myFileName[myFileName.length - 1];
@@ -33,50 +37,32 @@ router.post("/", commonController.upload, (req, res) => {
     Key: myFileName[0] + "." + fileType,
     Body: req.file.buffer,
   };
+  const params2 = {
+      params,
+      req,
+      res,
+  }
+
+  uploadController.uploadFile(params2);
+
 
   if (req.file.mimetype.startsWith("image")) {
-    // uploadController.uploadImageFile(params, req.file, res);
-    // console.log(
-    //   "RESULT :: " +
-    //     uploadController
-    //       .uploadImageFile(params)
-    //       .then((result) => {
-    //         console.log("RESULT SUCCESS  " + result);
-    //         res.json({
-    //           resultCode: 200,
-    //           resultMessage: result,
-    //         });
-    //       })
-    //       .catch((err) => {
-    //         console.log("RESULT ERROR :: " + err);
-    //         res.json({
-    //           resultCode: 400,
-    //           resultMessage: err,
-    //         });
-    //       })
-    // );
-    
-
-     uploadController
-          .uploadImageFile(params)
-          .then((result) => {
-            console.log("RESULT SUCCESS  " + result);
-            res.json({
-              resultCode: 200,
-              resultMessage: result,
-            });
-          })
-          .catch((err) => {
-            console.log("RESULT ERROR :: " + err);
-            res.json({
-              resultCode: 400,
-              resultMessage: err,
-            });
-          })
-    // res.json({
-    //     resultCode: 200,
-    //     resultMessage: uploadController.uploadImageFile(params)
-    // })
+    uploadController
+      .uploadImageFile(params)
+      .then((result) => {
+        res.json({
+          resultCode: 200,
+          resultFileName: result.key,
+          resultMessage: 'Upload Success'
+        });
+      })
+      .catch((err) => {
+        console.log("RESULT ERROR :: " + err);
+        res.json({
+          resultCode: 400,
+          resultMessage: err,
+        });
+      });
   } else {
     uploadController.uploadOtherFile(params, req.file, res, req);
   }
