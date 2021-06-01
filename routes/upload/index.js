@@ -7,6 +7,9 @@ var multer = require('multer')
 
 var AWS = require('aws-sdk');
 
+var fs2 = require('fs')
+var readline = require('readline')
+
 var router = express.Router();
 //https://brunch.co.kr/@daniellim/43 참고할것 
 dotenv.config({
@@ -57,8 +60,8 @@ router.post('/', upload, (req, res) => {
     }
 })
 
-// 파일 읽어오기
-router.get('/readFile', (req, res) => {
+// 파일 목록 불러오기 
+router.get('/fileList', (req, res) => {
     const params = {
         Bucket: process.env.NAVER_CLOUD_BUCKET_NAME,
         Prefix: 'text'
@@ -71,7 +74,7 @@ router.get('/readFile', (req, res) => {
                 errorMessage: err
             })
         } else {
-            readFile(data, res);
+            getFileList(data, res);
             //   res.json({
             //       resultCode: 200,
             //       resultMessage: data.Contents
@@ -95,20 +98,46 @@ router.get('/downloadFile', (req, res, next) => {
     res.attachment(fileKey);
     var fileStream = s3.getObject(params).createReadStream()
     fileStream.pipe(res);
-
 })
 
-function readFile(data, res) {
-    var keyList = [];
-
-    for (let i = 0; i < data.Contents.length; i++) {
-        keyList.push(data.Contents[i].Key)
+// 파일 읽어오기
+router.get('/readFile', (req, res) => {
+    var fileKey = req.query['fileName']
+    var params = {
+        Bucket: process.env.NAVER_CLOUD_BUCKET_NAME,
+        Key: fileKey
     }
 
-    // res.render('read_file2', { 'files': keyList })
-    res.json({
-        resultCode: 200,
-        resultMessage: keyList
+    s3.getObject(params, (err, data) => {
+        if (!err) {
+            const body = Buffer.from(data.Body).toString('utf8')
+            console.log(body)
+
+            // convertJson(body).then(res => console.log(res)).catch(err => console.log('error :: ' + err))//
+
+            res.json({
+                resultCode: 200,
+                resultMessage: body.split('\n')
+            })
+        }
+    })
+})
+
+function convertJson(body) {
+    return new Promise((resolve, reject) => {
+        const stream = fs2.createReadStream(body);
+        stream.on('error', reject)
+
+        const reader = readline.createInterface({
+            input: stream
+        })
+
+        const array = [];
+        reader.on('line', line => {
+            array.push(JSON.parse(line))
+        })
+
+        reader.on('close', () => resolve(array))
     })
 }
 
@@ -152,9 +181,18 @@ function uploadOtherFile(params, file, res, req) {
     res.render('upload_success', { title: 'upload' })
 }
 
+function getFileList(data, res) {
+    var keyList = [];
 
-function download() {
-    console.log('download')
+    for (let i = 0; i < data.Contents.length; i++) {
+        keyList.push(data.Contents[i].Key)
+    }
+
+    // res.render('read_file2', { 'files': keyList })
+    res.json({
+        resultCode: 200,
+        resultMessage: keyList
+    })
 }
 
 module.exports = router;
