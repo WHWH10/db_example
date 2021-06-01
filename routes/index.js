@@ -11,15 +11,15 @@ dotenv.config({
 })
 
 /* GET home page. */
-//router.get('/', function(req, res, next) {
-//  res.render('index', { title: 'Express' });
-//});
+router.get('/', function(req, res, next) {
+    res.render('index', { title: 'Express' });
+});
 
-router.get('/', (req, res) => {
-    res.json({
-        'userId': process.env.id,
-        'password': process.env.password
-    })
-})
+// router.get('/', (req, res) => {
+//     res.json({
+//         'userId': process.env.id,
+//         'password': process.env.password
+//     })
+// })
 
 module.exports = router;

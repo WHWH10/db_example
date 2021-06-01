@@ -5,7 +5,7 @@ var fs = require('fs')
 var multer = require('multer')
     //var upload = multer({ dest: './uploads' })
 
-var AWS = require('aws-sdk')
+var AWS = require('aws-sdk');
 
 var router = express.Router();
 //https://brunch.co.kr/@daniellim/43 참고할것 
@@ -43,9 +43,9 @@ router.post('/', upload, (req, res) => {
     let myFileName = req.file.originalname.split(".")
     const fileType = myFileName[myFileName.length - 1]
 
-    const params = { 
+    const params = {
         Bucket: process.env.NAVER_CLOUD_BUCKET_NAME,
-        Key: myFileName[0] +'.'+ fileType,
+        Key: myFileName[0] + '.' + fileType,
         Body: req.file.buffer,
     }
 
@@ -67,35 +67,35 @@ router.get('/readFile', (req, res) => {
     }
     s3.listObjects(params, function(err, data) {
         if (err) {
-          console.log("Error", err);
-          res.json({
-              errorCode: 400,
-              errorMessage: err
-          })
+            console.log("Error", err);
+            res.json({
+                errorCode: 400,
+                errorMessage: err
+            })
         } else {
-          console.log("Success", data);
-          console.log('data::  ' + data.Contents.Key)
-          _readFile(data, res);
-        //   res.json({
-        //       resultCode: 200,
-        //       resultMessage: data.Contents
-        //   })
+            console.log("Success", data);
+            console.log('data::  ' + data.Contents.Key)
+            _readFile(data, res);
+            //   res.json({
+            //       resultCode: 200,
+            //       resultMessage: data.Contents
+            //   })
         }
-      });
+    });
 })
 
 function _readFile(data, res) {
     var keyList = [];
 
-    for(let i=0;i<data.Contents.length; i++) {
+    for (let i = 0; i < data.Contents.length; i++) {
         keyList.push(data.Contents[i].Key)
     }
-    
-    res.render('read_file', { 'files': keyList})
-    // res.json({
-    //     resultCode: 200,
-    //     resultMessage: keyList
-    // })
+
+    res.render('read_file', { 'files': keyList })
+        // res.json({
+        //     resultCode: 200,
+        //     resultMessage: keyList
+        // })
 }
 
 function uploadImageFile(params, res) {
@@ -117,17 +117,17 @@ function uploadImageFile(params, res) {
 function uploadOtherFile(params, file, res, req) {
     console.log('upload Success :: ' + file.mimetype)
     let fileName = file.originalname.split('.')
-    const fileType = fileName[fileName.length -1]
+    const fileType = fileName[fileName.length - 1]
 
-    if(file.mimetype == 'text/plain') {
+    if (file.mimetype == 'text/plain') {
         console.log('success text file :: ' + fileName[0] + ' :: ' + fileType)
         var params = {
-            Bucket: process.env.NAVER_CLOUD_BUCKET_NAME+'/text',
-            Key: Date.now() + fileName[0] + '.'+ fileType,
+            Bucket: process.env.NAVER_CLOUD_BUCKET_NAME + '/text',
+            Key: Date.now() + fileName[0] + '.' + fileType,
             Body: file.buffer,
-        }        
+        }
     }
-    
+
     s3.upload(params, function(err, data) {
         if (err) {
             throw err
@@ -135,7 +135,12 @@ function uploadOtherFile(params, file, res, req) {
         console.log(`File uploaded successfully. ${data.Location}`)
     })
 
-    res.render('upload_success', { title: 'upload'})
+    res.render('upload_success', { title: 'upload' })
+}
+
+
+function download() {
+    console.log('download')
 }
 
 module.exports = router;

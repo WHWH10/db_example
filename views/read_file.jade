@@ -1,4 +1,5 @@
 ul
   for file in files
     li
-      p= file
+      p= file  
+      button.btn.btn-sm(onclick="download(file)") Download
