@@ -55,6 +55,7 @@ router.post("/", commonController.upload, (req, res) => {
     //         });
     //       })
     // );
+    
 
      uploadController
           .uploadImageFile(params)

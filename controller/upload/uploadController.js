@@ -5,25 +5,15 @@ var commonController = require("../common/commonController");
 
 // 이미지 파일 업로드 했을 경우
 function uploadImageFile(params) {
-  commonController.s3.upload(params, (err, data) => {
-    if (err) {
-      console.log("error : " + err);
-      return Promise((resolve, reject) => {
-          resolve(err);
-      });
-    } else {
-      console.log("success : " + data);
-      return Promise((resolve, reject) => {
-          resolve(data);
-      })
-    //   return data;
-    }
-  });
-
-  // res.json({
-  //   resultCode: 200,
-  //   resultMessage: data,
-  // });
+    return new Promise((resolve, reject) => {
+        commonController.s3.upload(params, (err, data) => {
+            if(err) {
+                reject(err);
+            } else {
+                resolve(data)
+            }
+        })
+    })
 }
 
 function uploadImageFilePromise(params) {
