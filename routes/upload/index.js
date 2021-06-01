@@ -1,7 +1,7 @@
 var express = require('express');
 var dotenv = require('dotenv')
 var path = require('path');
-var fs = require('fs')
+var fs = require('fs').promises
 var multer = require('multer')
     //var upload = multer({ dest: './uploads' })
 
@@ -59,8 +59,6 @@ router.post('/', upload, (req, res) => {
 
 // 파일 읽어오기
 router.get('/readFile', (req, res) => {
-    var keyList = [];
-
     const params = {
         Bucket: process.env.NAVER_CLOUD_BUCKET_NAME,
         Prefix: 'text'
@@ -73,9 +71,7 @@ router.get('/readFile', (req, res) => {
                 errorMessage: err
             })
         } else {
-            console.log("Success", data);
-            console.log('data::  ' + data.Contents.Key)
-            _readFile(data, res);
+            readFile(data, res);
             //   res.json({
             //       resultCode: 200,
             //       resultMessage: data.Contents
@@ -84,18 +80,36 @@ router.get('/readFile', (req, res) => {
     });
 })
 
-function _readFile(data, res) {
+
+// 다운로드 파일 
+router.get('/downloadFile', (req, res, next) => {
+    var fileKey = req.query['fileKey']
+
+    console.log('Download File : ' + fileKey)
+
+    var params = {
+        Bucket: process.env.NAVER_CLOUD_BUCKET_NAME,
+        Key: fileKey
+    }
+
+    res.attachment(fileKey);
+    var fileStream = s3.getObject(params).createReadStream()
+    fileStream.pipe(res);
+
+})
+
+function readFile(data, res) {
     var keyList = [];
 
     for (let i = 0; i < data.Contents.length; i++) {
         keyList.push(data.Contents[i].Key)
     }
 
-    res.render('read_file', { 'files': keyList })
-        // res.json({
-        //     resultCode: 200,
-        //     resultMessage: keyList
-        // })
+    // res.render('read_file2', { 'files': keyList })
+    res.json({
+        resultCode: 200,
+        resultMessage: keyList
+    })
 }
 
 function uploadImageFile(params, res) {

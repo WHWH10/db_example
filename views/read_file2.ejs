@@ -1,0 +1,42 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>
+        FileList
+    </title>
+</head>
+
+<body>
+    <h2>
+        File List Page
+    </h2>
+    <ul>
+        <form action="/upload/downloadFile" method="POST">
+            <% for (var i = 0; i < files.length ; i++) { %>
+                <li>
+                    <%= files[i] %>
+                        <br>
+                        <!-- <button type="submit">Download</button> -->
+                        <button id="file" onclick="downloadFile(files[i])">Download</button>
+                </li>
+                <% } %>
+        </form>
+    </ul>
+    <script>
+        function donwloadFile(char) {
+            var file = document.getElementById('file')
+        }
+    </script>
+</body>
+
+</html>
+
+
+<!-- <ul>
+    <% for (var i = 0; i < files.length ; i++) { %>
+        <li>
+            <%= files[i] %>
+        </li>
+        <% } %>
+</ul> -->
