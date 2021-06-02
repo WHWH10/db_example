@@ -18,54 +18,62 @@ dotenv.config({
 });
 
 // 파일 업로드 기본 페이지
+//https://stackoverflow.com/questions/34512559/how-should-i-batch-upload-to-s3-and-insert-to-mongodb-from-nodejs-webserver-with/34513997
 router.get("/", (req, res) => {
   res.render("upload");
 });
 
-// 파일 업로드
-//https://stackoverflow.com/questions/34512559/how-should-i-batch-upload-to-s3-and-insert-to-mongodb-from-nodejs-webserver-with/34513997
-// router.post("/", (req, res) => {
-//     uploadController.uploadFile(req, res)
-// })
-
+// 파일 업로드 :: POST
 router.post("/", commonController.upload, (req, res) => {
-  let myFileName = req.file.originalname.split(".");
-  const fileType = myFileName[myFileName.length - 1];
+  uploadController.uploadFile(req, res);
+});
 
-  const params = {
+// 파일 목록 불러오기 :: 전체
+router.get("/getAllFileList", (req, res) => {
+//   uploadController.getAllFileList(res);
+  var params = {
     Bucket: process.env.NAVER_CLOUD_BUCKET_NAME,
-    Key: myFileName[0] + "." + fileType,
-    Body: req.file.buffer,
+    MaxKeys: 300,
   };
-  const params2 = {
-      params,
-      req,
-      res,
-  }
 
-  uploadController.uploadFile(params2);
-
-
-  if (req.file.mimetype.startsWith("image")) {
-    uploadController
-      .uploadImageFile(params)
-      .then((result) => {
-        res.json({
-          resultCode: 200,
-          resultFileName: result.key,
-          resultMessage: 'Upload Success'
-        });
+  uploadController.listAllKeys(params)
+  .then((result) => {
+      res.json({
+          resultcode: 200,
+          resultMessage: result,
       })
-      .catch((err) => {
-        console.log("RESULT ERROR :: " + err);
-        res.json({
-          resultCode: 400,
-          resultMessage: err,
-        });
-      });
-  } else {
-    uploadController.uploadOtherFile(params, req.file, res, req);
-  }
+  })
+  .catch((err) => {
+      res.json({
+          errorCode: 400,
+          errorMessage: err
+      })
+  })
+//   .then((result) => {
+//       console.log('re:: ' + result)
+//     //   console.log('reKey:: ' + result[0].Key)
+//       res.json({
+//           resultCode: 200,
+//           resultMessage: result
+//       })
+//   })
+//   .catch((err) => {
+//       console.log('er:: ' + err)
+//       res.json({
+//           errorCode: 400,
+//           errorMessage: err
+//       })
+//   })
+});
+
+// 파일 다운로드
+router.get("/downloadFile", (req, res) => {
+  uploadController.downloadFile(req, res);
+});
+
+// 파일 읽어오기 : Naver Cloud Object Storage에 있는 파일 중에 Json으로 출력
+router.get("/readFile", (req, res) => {
+  uploadController.readFile(req, res);
 });
 
 module.exports = router;
