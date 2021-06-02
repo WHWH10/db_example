@@ -1,7 +1,7 @@
-const { reject } = require("lodash");
 var _ = require("lodash");
 
 var commonController = require("../common/commonController");
+var HeartRate = require("../../models/heart_rate");
 
 // 이미지 파일 업로드 했을 경우
 function uploadFile(req, res) {
@@ -79,61 +79,6 @@ function uploadOtherFile(params) {
   });
 }
 
-// Naver Cloud Object Storage에 있는 전체 파일 목록 불러오기
-// async function getAllFileList(res) {
-//   var params = {
-//     Bucket: process.env.NAVER_CLOUD_BUCKET_NAME,
-//     MaxKeys: 300,
-//   };
-
-//   // List All Objects
-//   console.log("List All In The Bucket");
-//   console.log("==========================");
-
-//   params.Delimiter = '/';
-//   while (true) {
-//     let response = await commonController.s3.listObjectsV2(params).promise();
-
-//     for(let content of response.Contents) {
-//         console.log(`    Name = ${content.Key}, Size = ${content.Size}, Owner = ${content.Owner.ID}`);
-//     }
-
-//     if(response.IsTruncated) {
-//         params.Marker = response.NextMarker;
-//     } else {
-//         break;
-//     }
-//   }
-// }
-
-// async function getAllFileList(res) {
-//   var params = {
-//     Bucket: process.env.NAVER_CLOUD_BUCKET_NAME,
-//     MaxKeys: 300,
-//   };
-
-//   var folderList = [];
-//   var contentList = [];
-
-// //   params.Delimiter = '/';
-
-//   let response = await commonController.s3
-//     .listObjectsV2(params)
-//     .promise()
-//     .then((result) => {
-//         for(let contents in result.Contents) {
-//             contentList.push(contents)
-//         }
-//         return contentList;
-//     })
-//     .catch((err) => {
-//         return err;
-//     });
-
-//     return response;
-
-// }
-
 const listAllKeys = (params, out = []) =>
   new Promise((resolve, reject) => {
     commonController.s3
@@ -155,26 +100,39 @@ const listAllKeys = (params, out = []) =>
       .catch(reject);
   });
 
-  const listObjects = params => {
-    commonController.s3.listObjectsV2(params, function (err, data) {
-        if (err) {
-            console.log(err);
-            throw err;
-        } else {
-            if (data != null && data != undefined) {
-                let fileList = data.Contents;
-                if (fileList != null && fileList.length > 0) {
-                    fileList.forEach((fileInfo, idx) => {
-                        console.log(fileInfo);
-                    });
-                }
-            } else {
-                console.log(params.Prefix, "is not exists.");
-            }
+const listObjects = (params) => {
+  commonController.s3.listObjectsV2(params, function (err, data) {
+    if (err) {
+      console.log(err);
+      throw err;
+    } else {
+      if (data != null && data != undefined) {
+        let fileList = data.Contents;
+        if (fileList != null && fileList.length > 0) {
+          fileList.forEach((fileInfo, idx) => {
+            console.log(fileInfo);
+          });
         }
-    });
-}
+      } else {
+        console.log(params.Prefix, "is not exists.");
+      }
+    }
+  });
+};
 
+const fileList = (params) =>
+  new Promise((resolve, reject) => {
+    commonController.s3
+      .listObjectsV2(params)
+      .promise()
+      .then((result) => {
+        for (let i = 0; i < result.length; i++) {
+          console.log(result[i].Key);
+        }
+        resolve(result);
+      })
+      .catch(reject);
+  });
 
 // 파일 목록 불러 온 후 성공했을 때 Key값만 출력
 function getFileList(result, res) {
@@ -232,6 +190,7 @@ function readFile(req, res) {
       readImageFile(params, res);
       break;
     default:
+      readDefaultFile(params, res);
       console.log("DEFAULT");
   }
 }
@@ -248,6 +207,10 @@ function readTextFile(params, res) {
   })
     .then((result) => {
       const body = Buffer.from(result.Body).toString("utf8");
+
+      // Json Mongodb 저장
+      saveToMongo(uploadConvertJson(body));
+
       res.json({
         resultCode: 200,
         resultMessage: uploadConvertJson(body),
@@ -309,6 +272,37 @@ function readImageFile(params, res) {
     });
 }
 
+function readDefaultFile(params, res) {
+  return new Promise((resolve, reject) => {
+    commonController.s3.getObject(params, (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(data);
+      }
+    });
+  })
+    .then((result) => {
+      res.json({
+        resultCode: 200,
+        resultMessage: result,
+      });
+    })
+    .catch((err) => {
+      console.log("readFile Error :: " + err);
+      var errorCode = err.statusCode;
+      var errorMessage = err.message;
+      res.json({
+        errorCode: errorCode,
+        errorMessage: errorMessage,
+      });
+    });
+  return res.json({
+    resultCode: 200,
+    resultMessage: params,
+  });
+}
+
 // upload text 파일을 Json으로 변환
 function uploadConvertJson(body) {
   const content = [];
@@ -319,14 +313,61 @@ function uploadConvertJson(body) {
       content.push(line);
     });
 
-  console.log("Content:: " + content[0]);
-
   const header = content[0].split(",");
 
   return _.tail(content).map((row) => {
     return _.zipObject(header, row.split(","));
   });
 }
+
+const saveToMongo = (jsonData) =>
+  new Promise((resolve, reject) => {
+    if (jsonData.length != 0) {
+      // var heartRate ;
+      // var heartRateModel = jsonData.forEach(item => {
+      //     var heartRate = new HeartRate({
+      //         data_category: item.data_category,
+      //         userID: item.userID,
+      //         dateTimeYear: item.dateTimeYear,
+      //         dateTimeHour: item.dateTimeHour,
+      //         heart_rate_measurement_location: item.heart_rate_measurement_location,
+      //         status_id: item.status_id,
+      //         heart_rate: item.heart_rate,
+      //         accuracy: item.accuracy
+      //     })
+      //     console.log('kkkk :: ' + `${heartRate}`)
+      // })
+
+      jsonData.forEach((item) => {
+        var heartRate = new HeartRate({
+          data_category: item.data_category,
+          userID: item.userID,
+          dateTimeYear: item.dateTimeYear,
+          dateTimeHour: item.dateTimeHour,
+          heart_rate_measurement_location: item.heart_rate_measurement_location,
+          status_id: item.status_id,
+          heart_rate: item.heart_rate,
+          accuracy: item.accuracy,
+        });
+        console.log('heartRate :: ' + `${heartRate}`)
+
+        heartRate.save((err) => {
+            if(err) {
+                console.log('SAVE MONGO ERROR :: ' + `${err}`)
+            }
+            else {
+                console.log('save DATA mongo');
+            }
+        })
+      });
+
+      console.log("momo :: " + `${jsonData}`);
+      console.log("save mongo :: " + `${jsonData.length}`);
+      resolve(jsonData);
+    } else {
+      reject("err");
+    }
+  });
 
 module.exports = {
   uploadFile,
@@ -338,5 +379,6 @@ module.exports = {
   readFile,
   listAllKeys,
   listObjects,
+  fileList,
   uploadConvertJson: uploadConvertJson,
 };
